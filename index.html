@@ -9,7 +9,6 @@
     <!-- Teachable Machine Image library -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
 
-    <!-- Centered styling -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -17,10 +16,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            padding: 40px 20px;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
         }
 
         h1 {
@@ -29,19 +27,19 @@
             margin-bottom: 20px;
         }
 
-        #start-button {
+        button {
             background-color: #4CAF50;
             color: white;
-            font-size: 20px;
-            padding: 12px 30px;
+            font-size: 18px;
+            padding: 10px 25px;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            margin: 15px 0;
+            margin: 10px 5px;
             transition: background-color 0.3s ease;
         }
 
-        #start-button:hover {
+        button:hover {
             background-color: #45a049;
         }
 
@@ -51,27 +49,54 @@
         }
 
         #webcam-container {
+            width: 300px;
+            height: 300px;
             border: 3px solid #4CAF50;
             border-radius: 12px;
             overflow: hidden;
             margin-bottom: 20px;
         }
 
+        #webcam-container canvas {
+            width: 300px;
+            height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
         #label-container {
-            font-size: 20px;
-            color: #333;
-            text-align: center;
+            width: 320px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
+        }
+
+        .label-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .bar {
+            background-color: #4CAF50;
+            height: 20px;
+            border-radius: 5px;
+            transition: width 0.2s ease;
+        }
+
+        .label-text {
+            min-width: 80px;
+            font-weight: bold;
         }
     </style>
 </head>
-
 <body>
     <h1>Food Preparation Attire Detection</h1>
     <p id="status">Status: Waiting</p>
-    <button id="start-button" onclick="init()">Start Detection</button>
+    <div>
+        <button id="start-button">Start Detection</button>
+        <button id="stop-button">Stop Detection</button>
+    </div>
 
     <div id="webcam-container"></div>
     <div id="label-container"></div>
@@ -79,6 +104,27 @@
 <script>
 const URL = "model/";
 let model, webcam, labelContainer, maxPredictions;
+let isRunning = false;
+
+document.getElementById("stop-button").disabled = true;
+
+document.getElementById("start-button").addEventListener("click", async () => {
+    if (isRunning) return;
+    isRunning = true;
+    document.getElementById("start-button").disabled = true;
+    document.getElementById("stop-button").disabled = false;
+    await init();
+});
+
+document.getElementById("stop-button").addEventListener("click", () => {
+    if (webcam) {
+        webcam.stop();
+        isRunning = false;
+        document.getElementById("status").innerText = "Status: Stopped";
+        document.getElementById("start-button").disabled = false;
+        document.getElementById("stop-button").disabled = true;
+    }
+});
 
 async function init() {
     try {
@@ -92,10 +138,25 @@ async function init() {
         await webcam.play();
         document.getElementById("webcam-container").appendChild(webcam.canvas);
 
+        // Prepare label container with bars
         labelContainer = document.getElementById("label-container");
         labelContainer.innerHTML = "";
         for (let i = 0; i < maxPredictions; i++) {
-            labelContainer.appendChild(document.createElement("div"));
+            const div = document.createElement("div");
+            div.className = "label-bar";
+            const labelText = document.createElement("div");
+            labelText.className = "label-text";
+            labelText.innerText = "Class " + i;
+            const barWrapper = document.createElement("div");
+            barWrapper.style.flexGrow = "1";
+            const bar = document.createElement("div");
+            bar.className = "bar";
+            bar.style.width = "0%";
+            barWrapper.appendChild(bar);
+
+            div.appendChild(labelText);
+            div.appendChild(barWrapper);
+            labelContainer.appendChild(div);
         }
 
         document.getElementById("status").innerText = "Status: Running ✅";
@@ -108,11 +169,13 @@ async function init() {
 }
 
 async function loop() {
+    if (!isRunning) return;
     webcam.update();
     const prediction = await model.predict(webcam.canvas);
     for (let i = 0; i < maxPredictions; i++) {
-        labelContainer.childNodes[i].innerText =
-            prediction[i].className + ": " + (prediction[i].probability * 100).toFixed(1) + "%";
+        const div = labelContainer.childNodes[i];
+        div.querySelector(".label-text").innerText = prediction[i].className;
+        div.querySelector(".bar").style.width = (prediction[i].probability * 100).toFixed(1) + "%";
     }
     window.requestAnimationFrame(loop);
 }
