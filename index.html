@@ -1,21 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Teachable Machine Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+</head>
+
+<body>
+    <h1>Food Preparation Attire Detection</h1>
+    <button onclick="init()">Start</button>
+
+    <p id="status">Status: Waiting</p>
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+
 <script>
 const URL = "model/";
 let model, webcam, labelContainer, maxPredictions;
 
 async function init() {
-    console.log("Init clicked"); // Debug line
-
     try {
-        console.log("Loading model...");
+        document.getElementById("status").innerText = "Status: Loading model...";
         model = await tmImage.load(URL + "model.json", URL + "metadata.json");
         maxPredictions = model.getTotalClasses();
-        console.log("Model loaded:", maxPredictions, "classes");
 
+        document.getElementById("status").innerText = "Status: Starting webcam...";
         webcam = new tmImage.Webcam(200, 200, true);
         await webcam.setup();
-        console.log("Webcam setup done");
         await webcam.play();
-
         document.getElementById("webcam-container").appendChild(webcam.canvas);
 
         labelContainer = document.getElementById("label-container");
@@ -24,11 +37,11 @@ async function init() {
             labelContainer.appendChild(document.createElement("div"));
         }
 
-        console.log("Running loop");
+        document.getElementById("status").innerText = "Status: Running ✅";
         window.requestAnimationFrame(loop);
-
     } catch (err) {
-        console.error("Error in init():", err);
+        document.getElementById("status").innerText = "ERROR: " + err.message;
+        console.error(err);
     }
 }
 
@@ -37,9 +50,11 @@ async function loop() {
     const prediction = await model.predict(webcam.canvas);
     for (let i = 0; i < maxPredictions; i++) {
         labelContainer.childNodes[i].innerText =
-            prediction[i].className + ": " +
-            prediction[i].probability.toFixed(2);
+            prediction[i].className + ": " + prediction[i].probability.toFixed(2);
     }
     window.requestAnimationFrame(loop);
 }
 </script>
+
+</body>
+</html>
