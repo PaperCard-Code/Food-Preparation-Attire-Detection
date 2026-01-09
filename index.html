@@ -1,41 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Teachable Machine Debug</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest"></script>
-</head>
-
-<body>
-    <h1>Teachable Machine Test</h1>
-    <button onclick="init()">Start</button>
-
-    <p id="status">Status: Waiting</p>
-    <div id="webcam-container"></div>
-    <div id="label-container"></div>
-
 <script>
 const URL = "model/";
 let model, webcam, labelContainer, maxPredictions;
 
 async function init() {
+    console.log("Init clicked"); // Debug line
+
     try {
-        document.getElementById("status").innerText = "Status: Loading model...";
-
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
-
-        model = await tmImage.load(modelURL, metadataURL);
+        console.log("Loading model...");
+        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
         maxPredictions = model.getTotalClasses();
-
-        document.getElementById("status").innerText = "Status: Starting webcam...";
+        console.log("Model loaded:", maxPredictions, "classes");
 
         webcam = new tmImage.Webcam(200, 200, true);
         await webcam.setup();
+        console.log("Webcam setup done");
         await webcam.play();
-        window.requestAnimationFrame(loop);
 
         document.getElementById("webcam-container").appendChild(webcam.canvas);
 
@@ -45,29 +24,22 @@ async function init() {
             labelContainer.appendChild(document.createElement("div"));
         }
 
-        document.getElementById("status").innerText = "Status: Running ✅";
+        console.log("Running loop");
+        window.requestAnimationFrame(loop);
 
     } catch (err) {
-        document.getElementById("status").innerText =
-            "ERROR: " + err.message;
-        console.error(err);
+        console.error("Error in init():", err);
     }
 }
 
 async function loop() {
     webcam.update();
-    await predict();
-    window.requestAnimationFrame(loop);
-}
-
-async function predict() {
     const prediction = await model.predict(webcam.canvas);
     for (let i = 0; i < maxPredictions; i++) {
         labelContainer.childNodes[i].innerText =
             prediction[i].className + ": " +
             prediction[i].probability.toFixed(2);
     }
+    window.requestAnimationFrame(loop);
 }
 </script>
-</body>
-</html>
