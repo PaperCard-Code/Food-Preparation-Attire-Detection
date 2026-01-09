@@ -2,16 +2,77 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Teachable Machine Demo</title>
+    <title>Food Preparation Attire Detection</title>
+
+    <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
+    <!-- Teachable Machine Image library -->
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+
+    <!-- Centered styling -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #start-button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 20px;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: background-color 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: #45a049;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        #webcam-container {
+            border: 3px solid #4CAF50;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #label-container {
+            font-size: 20px;
+            color: #333;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Food Preparation Attire Detection</h1>
-    <button onclick="init()">Start</button>
-
     <p id="status">Status: Waiting</p>
+    <button id="start-button" onclick="init()">Start Detection</button>
+
     <div id="webcam-container"></div>
     <div id="label-container"></div>
 
@@ -26,7 +87,7 @@ async function init() {
         maxPredictions = model.getTotalClasses();
 
         document.getElementById("status").innerText = "Status: Starting webcam...";
-        webcam = new tmImage.Webcam(200, 200, true);
+        webcam = new tmImage.Webcam(300, 300, true);
         await webcam.setup();
         await webcam.play();
         document.getElementById("webcam-container").appendChild(webcam.canvas);
@@ -39,6 +100,7 @@ async function init() {
 
         document.getElementById("status").innerText = "Status: Running ✅";
         window.requestAnimationFrame(loop);
+
     } catch (err) {
         document.getElementById("status").innerText = "ERROR: " + err.message;
         console.error(err);
@@ -50,11 +112,10 @@ async function loop() {
     const prediction = await model.predict(webcam.canvas);
     for (let i = 0; i < maxPredictions; i++) {
         labelContainer.childNodes[i].innerText =
-            prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+            prediction[i].className + ": " + (prediction[i].probability * 100).toFixed(1) + "%";
     }
     window.requestAnimationFrame(loop);
 }
 </script>
-
 </body>
 </html>
